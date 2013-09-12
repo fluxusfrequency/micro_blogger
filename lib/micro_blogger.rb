@@ -2,7 +2,6 @@ require 'jumpstart_auth'
 require 'klout'
 require 'bitly'
 
-
 class MicroBlogger
   attr_reader :client
 
@@ -35,26 +34,26 @@ class MicroBlogger
   end
 
   def tweet(message)
-     if message.length <= 140
+    if message.length <= 140
       @client.update(message)
-     else
+    else
       puts "Sorry, your tweet length was greater than 140 characters. Please compose a shorter message and try again."
     end
   end
 
   def dm(target, message)
     if message.length <= 140
-      puts "Trying to send #{target} this direct message: "
+      puts "Trying to send #{target} this direct message:"
       puts message
+      dm_tweet = "d #{target} #{message}"
+      tweet(dm_tweet)
+    end
 
-      screen_names = @client.followers.collect{ |follower| follower.screen_name}
-      if screen_names.include? target
-        @client.update(message)
-      else
-        puts "Sorry, you can only send direct messages to someone who is following you. Please try messaging someone who is following you."
-      end
+    screen_names = @client.followers.collect {|follower| follower.screen_name}
+    if screen_names.include?(target)
+      @client.update(message)
     else
-      puts "Sorry, your tweet length was greater than 140 characters. Please compose a shorter message and try again."
+      puts "Sorry, you can only send direct messages to your followers. Please try messaging someone who is following you."
     end
   end
 
@@ -69,7 +68,7 @@ class MicroBlogger
   def spam_my_followers(message)
     followers_list
     screen_names.each do
-      dm(message)
+      dm(screen_name, message)
     end
   end
 
@@ -77,23 +76,23 @@ class MicroBlogger
     friends = @client.friends.sort_by { |friend| friend.screen_name.downcase }
     last_tweets = []
     friends.each do |friend|
-      timestamp = friend.status.created_at# find each friend's last message
-      puts "#{friend.screen_name} said this on #{timestamp.strftime ("%A, %b %d")}:" # print each friend's screen_name
-      puts "#{friend.status.text}" # print each friend's last message
-      puts ""  # Just print a blank line to separate people
+      timestamp = friend.status.created_at
+      puts "#{friend.screen_name} said this on #{timestamp.strftime("%A, %b %d")}:" # print each friend's screen_name
+      puts "#{friend.status.text}"
+      puts ""
     end
   end
 
   def shorten(original_url)
     Bitly.use_api_version_3
-    bitly = Bitly.new('hungryacademy', 'R_430e9f62250186d2612cca76eee2dbc6')
-    return bitly.shorten(original_url).short_url
     puts "Shortening this URL: #{original_url}"
+    bitly = Bitly.new("#{original_url}", 'R_430e9f62250186d2612cca76eee2dbc6')
+    return bitly.shorten(original_url).short_url
   end
 
   def klout_score
-    friends = @client.friends.collect{|f| f.screen_name}
-    friends.sort.each do |friend|
+    screen_names = @client.friends.collect{|f| f.screen_name}
+      screen_names.sort.each do |friend|
       begin
         identity = Klout::Identity.find_by_screen_name(friend)
         user = Klout::User.new(identity.id)
@@ -110,5 +109,5 @@ end
 
 
 blogger = MicroBlogger.new
-# blogger.run
-# blogger.klout_score
+blogger.run
+blogger.klout_score
